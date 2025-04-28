@@ -12,8 +12,8 @@
 
 #define CMD_FILE "monitor_cmd"
 
-volatile sig_atomic_t got_cmd = 0;
-volatile sig_atomic_t terminate_monitor = 0;
+int got_cmd = 0;
+int terminate_monitor = 0;
 
 void sigusr1_handler(int signo) {
     got_cmd = 1;
