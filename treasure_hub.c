@@ -50,9 +50,25 @@ void handle_list_hunts() {
 }
 
 void handle_list_treasures(const char *hunt_id) {
-    char cmd[512];
-    snprintf(cmd, sizeof(cmd), "./treasure_manager --list %s", hunt_id);
-    system(cmd);
+    pid_t pid = fork();
+    if (pid < 0) {
+        perror("fork");
+        return;
+    }
+    if (pid == 0) {
+        execlp("./treasure_manager","treasure_manager","--list", hunt_id,(char *)NULL);                 
+        perror("execlp");
+        _exit(EXIT_FAILURE);
+    } else {
+        int status;
+        if (waitpid(pid, &status, 0) < 0) {
+            perror("waitpid");
+        } else if (WIFEXITED(status)) {
+            printf("treasure_manager s-a terminat cu cod %d\n", WEXITSTATUS(status));
+        } else if (WIFSIGNALED(status)) {
+            printf("treasure_manager a fost omorât de semnal %d\n", WTERMSIG(status));
+        }
+    }
 }
 
 void handle_view_treasure(const char *hunt_id, const char *t_id) {
@@ -64,11 +80,9 @@ void handle_view_treasure(const char *hunt_id, const char *t_id) {
 void monitor_loop() {
     struct sigaction sa1 = {0}, sa2 = {0};
     sa1.sa_handler = sigusr1_handler;
-    sigemptyset(&sa1.sa_mask);
     sigaction(SIGUSR1, &sa1, NULL);
 
     sa2.sa_handler = sigusr2_handler;
-    sigemptyset(&sa2.sa_mask);
     sigaction(SIGUSR2, &sa2, NULL);
 
     while (!terminate_monitor) {
@@ -111,7 +125,7 @@ int main() {
         printf("> "); fflush(stdout);
         if (!fgets(input, sizeof(input), stdin)) break;
         input[strcspn(input, "\n")] = '\0';
-        char *cmd = input;
+        char *cmd = strtok(input, " \t");
         if (!cmd) continue;
         if (strcmp(cmd, "start_monitor") == 0) {
             if (monitor_pid > 0) {
@@ -135,6 +149,7 @@ int main() {
             FILE *f = fopen(CMD_FILE, "w");
             fprintf(f, "LIST_HUNTS\n"); fclose(f);
             kill(monitor_pid, SIGUSR1);
+            usleep(100000);
         } else if (strcmp(cmd, "list_treasures") == 0) {
             char *hunt = strtok(NULL, " \t");
             if (!hunt) {
@@ -148,6 +163,7 @@ int main() {
             FILE *f = fopen(CMD_FILE, "w");
             fprintf(f, "LIST_TREASURES %s\n", hunt); fclose(f);
             kill(monitor_pid, SIGUSR1);
+            usleep(100000); 
         } else if (strcmp(cmd, "view_treasure") == 0) {
             char *hunt = strtok(NULL, " \t");
             char *tid = strtok(NULL, " \t");
@@ -162,6 +178,7 @@ int main() {
             FILE *f = fopen(CMD_FILE, "w");
             fprintf(f, "VIEW_TREASURE %s %s\n", hunt, tid); fclose(f);
             kill(monitor_pid, SIGUSR1);
+            usleep(100000); 
         } else if (strcmp(cmd, "stop_monitor") == 0) {
             if (monitor_pid <= 0) {
                 printf("Monitor is not running\n");
