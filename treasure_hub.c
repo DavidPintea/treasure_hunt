@@ -34,7 +34,7 @@ void handle_list_hunts() {
     int count;
     printf("Hunts and treasure counts:\n");
     while ((entry = readdir(d)) != NULL) {
-        if (entry->d_type == DT_DIR && strcmp(entry->d_name, ".") && strcmp(entry->d_name, "..")) {
+        if (entry->d_type == DT_DIR) {
             snprintf(path, sizeof(path), "%s/treasures.dat", entry->d_name);
             int fd = open(path, O_RDONLY);
             if (fd >= 0) {
@@ -122,7 +122,7 @@ int main() {
     char input[256];
 
     while (1) {
-        printf("> "); fflush(stdout);
+        printf("> ");
         if (!fgets(input, sizeof(input), stdin)) break;
         input[strcspn(input, "\n")] = '\0';
         char *cmd = strtok(input, " \t");
