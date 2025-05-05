@@ -34,12 +34,12 @@ void handle_list_hunts() {
     int count;
     printf("Hunts and treasure counts:\n");
     while ((entry = readdir(d)) != NULL) {
-        if (entry->d_type == DT_DIR) {
+        if (entry->d_type == DT_DIR && strcmp(entry->d_name, ".") && strcmp(entry->d_name, "..")) {
             snprintf(path, sizeof(path), "%s/treasures.dat", entry->d_name);
             int fd = open(path, O_RDONLY);
             if (fd >= 0) {
                 count = 0;
-                char buf[512]; 
+                char buf[256]; 
                 while (read(fd, buf, sizeof(buf)) > 0) count++;
                 close(fd);
                 printf("Hunt: %s, Count: %d\n", entry->d_name, count);
